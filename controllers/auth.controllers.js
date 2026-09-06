@@ -30,14 +30,33 @@ const user=await usermodel.create({
     password:hashedPassword
 })
 
-const token=jwt.sign(
+const accessToken=jwt.sign(
 {
     userid : user._id,
 },
 config.JWT_SECRET,
 {
-    expiresIn:"1h"
+    expiresIn:"15m"
 } 
+)
+
+const refreshToken=jwt.sign(
+{
+    userid : user._id,
+},
+config.JWT_SECRET,
+{
+    expiresIn:"7d"
+} 
+)
+
+res.cookie("refreshToken",refreshToken,
+    {
+        httponly:true,
+        secure:true,
+        sameSite:"strict",
+        maxAge:7*24*60*60*1000,
+    }
 )
 
 res.status(201).json({
@@ -46,7 +65,7 @@ res.status(201).json({
         username:user.username,
         email:user.email,
     },
-    token
+    accessToken
 
 })
 
@@ -55,4 +74,77 @@ res.status(201).json({
 
 
 
+}
+
+exports.getMe=async(req,res)=>{
+
+    const token =req.headers.authorization?.split(" ")[1];
+
+    if(!token){
+        res.status(401).json({
+            message:"token not found"
+        })
+    }
+
+    const decoded=jwt.verify(token,config.JWT_SECRET);
+
+    const user=await usermodel.findById(decoded.userid);
+
+    res.status(200).json({
+        message:"user fetched successfully",
+        user:{
+            username:user.username,
+            email:user.email
+            }
+        })
+}
+
+exports.refreshToken=async(req,res)=>{
+
+    const refreshToken=req.cookies.refreshToken;
+
+    if(!refreshToken){
+        res.status(401).json({
+            message:"refreshToken is required"
+        })
+    }
+
+
+    const decoded=jwt.verify(refreshToken,config.JWT_SECRET);
+
+    const user=await usermodel.findById(decoded.userid);
+
+    const newAccessToken=jwt.sign(
+        {
+            userid : user._id,
+        },
+        config.JWT_SECRET,
+        {
+            expiresIn:"15m"
+        } 
+    )
+
+    const newRefreshToken=jwt.sign(
+        {
+            userid : user._id,
+        },
+        config.JWT_SECRET,
+        {
+            expiresIn:"7d"
+        } 
+    )
+
+    res.cookie("refreshToken",newRefreshToken
+        ,{
+        httponly:true,
+        secure:true,
+        sameSite:true,
+        expiresIn:7*24*60*60*1000
+        }
+    )
+
+    res.status(200).json({
+        message:"Access Token created Successfully",
+        newAccessToken
+    })
 }
