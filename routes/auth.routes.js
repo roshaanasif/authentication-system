@@ -17,6 +17,7 @@ authRouter.get('/logout',authControllers.logOut);
 
 authRouter.get('/logout-all',authControllers.logOutAll);
 
+authRouter.get('/verify-email',authControllers.verifyEmail);
 
 module.exports=authRouter
 

@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(logger('dev')); 
 app.use(cookie()); 
 
-app.use("/api/auth",authRouter)
+app.use("/api/auth",authRouter);
 
 
 module.exports = app;
