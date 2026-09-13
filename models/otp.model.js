@@ -14,10 +14,15 @@ const otpSchema=mongoose.Schema({
     otpHash:{
         type:String,
         required:[true,"otpHash is required"]
+    },
+    expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 60 * 1000),
+    expires: 0,
     }
 },
 
-{timestamp:true}
+{timestamps:true}
 
 )
 

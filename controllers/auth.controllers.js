@@ -95,14 +95,14 @@ res.status(200).json({
 
 exports.register = async(req,res) => {
 const {username,email,password}=req.body;
-const IsAlreadyRistered=await usermodel.findOne({
+const IsAlreadyRegistered=await usermodel.findOne({
     $or:[
         {email},
         {username}
     ]
 })
 
-if(IsAlreadyRistered){
+if(IsAlreadyRegistered){
     return res.status(409).json({
         message:"username or email must be unique"
     })
@@ -349,9 +349,18 @@ exports.refreshToken=async(req,res)=>{
     })
 }
 
-
 exports.verifyEmail=async(req,res)=>{
     const {otp,email}=req.body
+
+    const otpRecord = await otpModel.findOne({
+    email,
+    });
+
+    if (!otpRecord) {
+    return res.status(400).json({
+        message: "OTP expired",
+    });
+    }
 
     const otpHash=crypto.createHash('sha256').update(otp).digest('hex');
 
@@ -377,6 +386,72 @@ exports.verifyEmail=async(req,res)=>{
             username:userInOtpDoc.username,
             email:userInOtpDoc.email,
             verified:userInOtpDoc.verified
+        }
+    })
+
+}
+
+
+exports.resendOTP=async(req,res)=>{
+
+
+const {email}=req.body;
+
+
+const user=await usermodel.findOne(
+    {email}
+)
+
+if(!user){
+    res.status(404).json({
+        message:"user not found"
+    })
+}
+
+if(user.verified){
+    return res.status(400).json({
+        message:"user already verified"
+    })
+}
+
+
+const userHavingOtpModel=await otpModel.findOne(
+    {email}
+)
+
+console.log("userHavingOtpModel",userHavingOtpModel)
+
+if(userHavingOtpModel){
+   return res.status(400).json({
+    message:"otp already sent to this email"
+   })     
+}
+
+
+const otp=generateOtp();
+
+const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+
+const usersotp=await otpModel.create({
+        email,
+        user:user._id,
+        otpHash,
+    })
+
+
+
+const emailHtml=generateEmailHtml(otp);
+
+
+await sendEmail(email,"your OTP verifictaion" ,`your otp code is ${otp}`,emailHtml)
+
+
+res.status(200).json({
+        message:"Otp resend  Successfully",
+        user:{
+            username:user.username,
+            email:user.email,
+            verified:user.verified
         }
     })
 

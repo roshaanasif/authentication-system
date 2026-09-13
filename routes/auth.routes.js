@@ -19,5 +19,7 @@ authRouter.get('/logout-all',authControllers.logOutAll);
 
 authRouter.get('/verify-email',authControllers.verifyEmail);
 
+authRouter.get('/resend-otp',authControllers.resendOTP);
+
 module.exports=authRouter
 
